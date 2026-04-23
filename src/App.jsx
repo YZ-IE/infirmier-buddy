@@ -2,28 +2,13 @@ import { useState, useEffect } from 'react';
 import { T } from './theme.js';
 import { loadFavs, toggleFav } from './favorites.js';
 import Iatrogenique from './modules/Iatrogenique/index.jsx';
-import Urgences     from './modules/Urgences/index.jsx';
 import Scores       from './modules/Scores/index.jsx';
-import Soins        from './modules/Soins/index.jsx';
-import Organisation from './modules/Organisation/index.jsx';
-import Formation    from './modules/Formation/index.jsx';
-import ECG          from './modules/ECG/index.jsx';
-import AideMemoire  from './modules/AideMemoire/index.jsx';
-import Medicaments  from './modules/Medicaments/index.jsx';
 
 const MODULES = [
-  { id:'iatr',    label:'Iatrogénie',   icon:'💊', color:T.iatr,    desc:'Doses · Débits · SAP · Interactions · Opioïdes' },
-  { id:'urg',     label:'Urgences',     icon:'🚨', color:T.urg,     desc:'RCP · AVC · Anaphylaxie · Sepsis' },
-  { id:'score',   label:'Scores',       icon:'📊', color:T.score,   desc:'Glasgow · EVA · GDS · NIHSS · RASS · CPOT' },
-  { id:'ecg',     label:'ECG',          icon:'💓', color:'#00e676', desc:'Rythmes · Tracés interactifs · Quiz', badge:'NOUVEAU' },
-  { id:'soins',   label:'Soins',        icon:'💉', color:T.soins,   desc:'Pansements · PAC · Piccline · Dialyse · Timers' },
-  { id:'orga',    label:'Organisation', icon:'📋', color:T.orga,    desc:'Planning · SBAR · Transmissions · 5B' },
-  { id:'form',    label:'Formation',    icon:'🎓', color:T.form,    desc:'Quiz · Cas cliniques · Lexique · Entraînement' },
-  { id:'meds',    label:'Médicaments',  icon:'💉', color:'#e879f9', desc:'Fiches · Posologies · Indications · Surveillance', badge:'NOUVEAU' },
-  { id:'aidemem', label:'Aide-Mémoire', icon:'🗒️', color:'#6366f1', desc:'Notes patients chiffrées · Services · Soins' },
+  { id:'iatr',  label:'Iatrogénie', icon:'💊', color:T.iatr,  desc:'Doses · Débits · SAP · Interactions · Opioïdes' },
+  { id:'score', label:'Scores',     icon:'📊', color:T.score, desc:'Glasgow · EVA · GDS · NIHSS · RASS · CPOT' },
 ];
 
-// ─── Recherche floue ──────────────────────────────────────────────────────────
 const SEARCH_INDEX = [
   { q:['glasgow','gcs','conscience','coma'],                         mod:'score', label:'Glasgow (GCS)' },
   { q:['gds','gaz du sang','ph','pao2','paco2','acidose'],           mod:'score', label:'GDS — Gaz du sang' },
@@ -46,36 +31,10 @@ const SEARCH_INDEX = [
   { q:['sap','seringue','autopousseuse'],                            mod:'iatr',  label:'Seringue auto-pousseuse' },
   { q:['interaction','médicament','médicamenteux'],                  mod:'iatr',  label:'Interactions médicamenteuses' },
   { q:['reconstitution','antibiotique','dilution'],                  mod:'iatr',  label:'Reconstitution antibiotiques' },
-  { q:['compatibilité','iv','perfusion y'],                          mod:'iatr',  label:'Compatibilités IV en Y' },
+  { q:['compatibilité','iv','perfusion y'],                         mod:'iatr',  label:'Compatibilités IV en Y' },
   { q:['nutrition','parentérale','entérale','harris','calories'],    mod:'iatr',  label:'Nutrition parentérale/entérale' },
   { q:['pédiatrique','pédiatrie','enfant','nourrisson'],             mod:'iatr',  label:'Calculateur pédiatrique' },
-  { q:['rcp','arrêt cardiaque','réanimation','acr'],                 mod:'urg',   label:'RCP' },
-  { q:['anaphylaxie','allergie','choc allergique'],                  mod:'urg',   label:'Anaphylaxie' },
-  { q:['sepsis','choc septique'],                                    mod:'urg',   label:'Sepsis' },
-  { q:['avc','stroke','hémiplégie'],                                 mod:'urg',   label:'AVC' },
-  { q:['hypoglycémie','glycémie','sucre'],                           mod:'urg',   label:'Hypoglycémie' },
-  { q:['convulsion','épilepsie'],                                    mod:'urg',   label:'Convulsions' },
-  { q:['oap','oedème pulmonaire','détresse respiratoire'],           mod:'urg',   label:'OAP' },
-  { q:['timer','chrono','antiseptique'],                             mod:'soins', label:'Timers de soins' },
-  { q:['pansement','plaie','escarre','cicatrice'],                   mod:'soins', label:'Pansements' },
-  { q:['piccline','midline','voie centrale'],                        mod:'soins', label:'Piccline / Midline' },
-  { q:['pac','chambre implantable'],                                 mod:'soins', label:'PAC — Chambre implantable' },
-  { q:['kta','cathéter artériel'],                                   mod:'soins', label:'KTA — Cathéter artériel' },
-  { q:['dialyse','hémodialyse','rein'],                              mod:'soins', label:'Dialyse' },
-  { q:['sbar','transmission','relève'],                              mod:'orga',  label:'SBAR' },
-  { q:['planning','journée','tâche','horaire'],                      mod:'orga',  label:'Planning de la journée' },
-  { q:['transmissions','ciblées','dla'],                             mod:'orga',  label:'Transmissions ciblées' },
-  { q:['normes','biologie','bio','labo'],                            mod:'orga',  label:'Normes biologiques' },
-  { q:['5b','cinq b','checklist médicament'],                        mod:'orga',  label:'Checklist 5B médicaments' },
-  { q:['morphine','opioïde','antalgique'],                           mod:'meds',  label:'Morphine' },
-  { q:['adrénaline','epinephrine','anaphylaxie'],                    mod:'meds',  label:'Adrénaline' },
-  { q:['noradrénaline','vasopresseur','choc'],                       mod:'meds',  label:'Noradrénaline' },
-  { q:['furosémide','diurétique','lasix'],                           mod:'meds',  label:'Furosémide' },
-  { q:['midazolam','sédatif','hypnovel'],                            mod:'meds',  label:'Midazolam' },
-  { q:['héparine','anticoagulant'],                                  mod:'meds',  label:'Héparine' },
-  { q:['insuline','diabète','glycémie'],                             mod:'meds',  label:'Insuline' },
-  { q:['paracétamol','doliprane','antipyrétique'],                   mod:'meds',  label:'Paracétamol' },
-  { q:['médicament','fiche','posologie','surveillance ide'],         mod:'meds',  label:'Fiches médicaments' },
+  { q:['opioïde','morphine équivalence','conversion'],               mod:'iatr',  label:'Convertisseur opioïdes' },
 ];
 
 function normalize(str) {
@@ -117,32 +76,15 @@ export default function App() {
     return () => { if (handler) handler.remove(); };
   }, [active]);
 
-  function openModule(mod, toolId = null) {
-    setActive(mod);
-    setInitialTool(toolId);
-  }
-
-  function handleBack() {
-    setActive(null);
-    setInitialTool(null);
-  }
-
-  function handleFavChange() {
-    setFavs(loadFavs());
-  }
+  function openModule(mod, toolId = null) { setActive(mod); setInitialTool(toolId); }
+  function handleBack() { setActive(null); setInitialTool(null); }
+  function handleFavChange() { setFavs(loadFavs()); }
 
   const renderModule = () => {
     const props = { onBack: handleBack, initialTool, onFavChange: handleFavChange };
     switch (active) {
-      case 'iatr':    return <Iatrogenique {...props} />;
-      case 'urg':     return <Urgences     {...props} />;
-      case 'score':   return <Scores       {...props} />;
-      case 'ecg':     return <ECG          onBack={handleBack} />;
-      case 'soins':   return <Soins        {...props} />;
-      case 'orga':    return <Organisation {...props} />;
-      case 'form':    return <Formation    {...props} />;
-      case 'meds':    return <Medicaments  {...props} />;
-      case 'aidemem': return <AideMemoire  onBack={handleBack} />;
+      case 'iatr':  return <Iatrogenique {...props} />;
+      case 'score': return <Scores       {...props} />;
       default: return null;
     }
   };
@@ -160,18 +102,15 @@ export default function App() {
     <div style={{ minHeight:'100vh', background:T.bg, color:T.text, fontFamily:'system-ui,sans-serif' }}>
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
-      {/* Header */}
       <div style={{ background:'#1e293b', borderBottom:'1px solid #334155', padding:'16px 18px', position:'sticky', top:0, zIndex:10 }}>
-        <div style={{ fontSize:10, color:'#64748b', fontFamily:'monospace', letterSpacing:3, marginBottom:2 }}>INFIRMIER PRO</div>
-        <div style={{ fontSize:22, fontWeight:700, color:T.text }}>Soins Généraux <span style={{color:'#6366f1'}}>●</span></div>
+        <div style={{ fontSize:10, color:'#64748b', fontFamily:'monospace', letterSpacing:3, marginBottom:2 }}>INFIRMIER CALC</div>
+        <div style={{ fontSize:22, fontWeight:700, color:T.text }}>Calculs Cliniques <span style={{color:T.iatr}}>●</span></div>
+        <div style={{ fontSize:10, color:'#f43f5e', fontFamily:'monospace', marginTop:2 }}>⚠️ Outil de vérification — Usage professionnel sous prescription</div>
         <div style={{ marginTop:10, position:'relative' }}>
           <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16, color:'#64748b' }}>🔍</span>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher : GDS, RASS, morphine, timer…"
-            style={{ width:'100%', background:'#0f172a', border:'1px solid #334155', borderRadius:10, padding:'10px 12px 10px 38px', color:T.text, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit' }}
-          />
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher : dose, RASS, QSOFA, interactions…"
+            style={{ width:'100%', background:'#0f172a', border:'1px solid #334155', borderRadius:10, padding:'10px 12px 10px 38px', color:T.text, fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
           {search && <button onClick={() => setSearch('')} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#64748b', cursor:'pointer', fontSize:18 }}>×</button>}
         </div>
         {search.length >= 2 && (
@@ -198,8 +137,6 @@ export default function App() {
       </div>
 
       <div style={{ padding:'16px 14px 80px' }}>
-
-        {/* Section Favoris */}
         {favs.length > 0 && (
           <>
             <div style={{ color:'#64748b', fontFamily:'monospace', fontSize:10, letterSpacing:2, marginBottom:8 }}>⭐ FAVORIS</div>
@@ -227,15 +164,13 @@ export default function App() {
           </>
         )}
 
-        {/* Grid modules */}
         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
           {MODULES.map(m => (
             <div key={m.id} onClick={() => openModule(m.id)} style={{
-              background:'#1e293b', border:`1px solid ${m.badge ? m.color+'88' : m.color+'44'}`,
+              background:'#1e293b', border:`1px solid ${m.color}44`,
               borderRadius:12, padding:'16px 14px', cursor:'pointer',
-              boxShadow:`0 0 16px ${m.color}11`, position:'relative',
+              boxShadow:`0 0 16px ${m.color}11`,
             }}>
-              {m.badge && <span style={{position:'absolute',top:8,right:8,background:m.color+'22',color:m.color,fontSize:8,fontFamily:'monospace',padding:'2px 6px',borderRadius:8}}>{m.badge}</span>}
               <div style={{ fontSize:28, marginBottom:8 }}>{m.icon}</div>
               <div style={{ color:m.color, fontWeight:700, fontSize:14, marginBottom:4 }}>{m.label}</div>
               <div style={{ color:'#64748b', fontSize:11, lineHeight:1.5 }}>{m.desc}</div>
@@ -243,8 +178,10 @@ export default function App() {
           ))}
         </div>
 
-        <div style={{ marginTop:20, background:'#1e293b', border:'1px solid #334155', borderRadius:10, padding:'12px 16px', textAlign:'center' }}>
-          <div style={{ color:'#64748b', fontSize:11, fontFamily:'monospace' }}>⚕️ Usage professionnel · Toujours vérifier avec le prescripteur</div>
+        <div style={{ marginTop:20, background:'#1f0a0a', border:'1px solid #ef444444', borderRadius:10, padding:'12px 16px' }}>
+          <div style={{ color:'#fca5a5', fontSize:11, lineHeight:1.6 }}>
+            🚨 Outil de vérification clinique — Tout calcul doit être confronté à la prescription médicale. Ne se substitue pas au jugement du prescripteur. Usage réservé aux professionnels de santé.
+          </div>
         </div>
       </div>
     </div>
